@@ -6,9 +6,9 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "CLI untuk melihat aktivitas GitHub",
+  "author": "Mochamad Rizki",
+  "license": "MIT",
+  "description": "Simple CLI to fetch GitHub user activity",
   "bin": {
     "github-activity": "./index.js"
   },
