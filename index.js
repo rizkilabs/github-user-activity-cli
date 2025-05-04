@@ -2,6 +2,14 @@
 
 const https = require("https");
 const readline = require("readline");
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
+
+const CACHE_DIR = path.join(os.homedir(), ".github-activity");
+const CACHE_FILE = path.join(CACHE_DIR, "cache.json");
+const CACHE_DURATION = 5 * 60 * 1000; // 5 menit dalam milidetik
+
 
 // ANSI color codes
 const colors = {
@@ -138,23 +146,57 @@ rl.question("Masukkan username GitHub: ", (username) => {
   rl.question("Filter event type (misal: PushEvent)? Tekan Enter jika tidak ingin filter: ", (filter) => {
     console.log(`\n${colors.cyan}🔍 Mengambil data aktivitas...${colors.reset}\n`);
 
-    fetchEvents(username, (err, events) => {
-      if (err) {
-        console.error(`${colors.red}❌ Error:${colors.reset} ${err.message}`);
-        rl.close();
-        return;
-      }
+    const cache = loadCache();
+    const cached = cache[username];
+    const now = Date.now();
 
-      console.log(`${colors.bold}${colors.yellow}📌 Aktivitas terbaru dari ${username}:${colors.reset}`);
-      printEvents(events, filter || null);
-
-      // Optional: tampilkan rate limit
-      fetchRateLimit((err, rate) => {
-        if (!err) {
-          console.log(`\n📉 ${colors.yellow}Sisa limit API GitHub: ${rate.remaining}/${rate.limit}${colors.reset}`);
+    if (cached && now - cached.timestamp < CACHE_DURATION) {
+      console.log(`${colors.green}📦 Mengambil dari cache...${colors.reset}`);
+      printEvents(cached.data, filter || null);
+      rl.close();
+    } else {
+      fetchEvents(username, (err, events) => {
+        if (err) {
+          console.error(`${colors.red}❌ Error:${colors.reset} ${err.message}`);
+          rl.close();
+          return;
         }
-        rl.close();
+
+        cache[username] = {
+          timestamp: now,
+          data: events
+        };
+        saveCache(cache);
+
+        console.log(`${colors.bold}${colors.yellow}📌 Aktivitas terbaru dari ${username}:${colors.reset}`);
+        printEvents(events, filter || null);
+
+        fetchRateLimit((err, rate) => {
+          if (!err) {
+            console.log(`\n📉 ${colors.yellow}Sisa limit API GitHub: ${rate.remaining}/${rate.limit}${colors.reset}`);
+          }
+          rl.close();
+        });
       });
-    });
+    }
+
   });
 });
+
+function loadCache() {
+  try {
+    if (!fs.existsSync(CACHE_FILE)) return {};
+    const raw = fs.readFileSync(CACHE_FILE, "utf-8");
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+function saveCache(cache) {
+  if (!fs.existsSync(CACHE_DIR)) {
+    fs.mkdirSync(CACHE_DIR, { recursive: true });
+  }
+  fs.writeFileSync(CACHE_FILE, JSON.stringify(cache, null, 2), "utf-8");
+}
+
