@@ -8,5 +8,9 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "CLI untuk melihat aktivitas GitHub",
+  "bin": {
+    "github-activity": "./index.js"
+  },
+  "type": "commonjs"
 }

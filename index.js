@@ -1,29 +1,40 @@
+#!/usr/bin/env node
 // index.js
+
+const readline = require("readline");
 const { fetchEvents, printEvents, fetchRateLimit } = require("./github");
 
-const username = process.argv[2];
-const filterType = process.argv[3]; // opsional: filter jenis event
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
-if (!username) {
-  console.log("🔧 Usage: node index.js <username> [EventType]");
-  console.log("Contoh: node index.js kamranahmedse PushEvent");
-  process.exit(1);
-}
-
-console.log("🔄 Mengambil aktivitas GitHub...");
-
-fetchEvents(username, (err, events) => {
-  if (err) {
-    console.error("❌ Error:", err.message);
+rl.question("Masukkan username GitHub: ", (username) => {
+  if (!username) {
+    console.log("❌ Username tidak boleh kosong.");
+    rl.close();
     return;
   }
 
-  console.log(`📌 Aktivitas terbaru dari ${username}:`);
-  printEvents(events, filterType);
+  rl.question("Ingin filter berdasarkan event type (misal: PushEvent)? (tekan Enter jika tidak): ", (filter) => {
+    console.log("🔄 Mengambil aktivitas GitHub...\n");
 
-  fetchRateLimit((err, rate) => {
-    if (!err) {
-      console.log(`\n📉 Rate Limit: ${rate.remaining} dari ${rate.limit} permintaan tersedia`);
-    }
+    fetchEvents(username, (err, events) => {
+      if (err) {
+        console.error("❌ Error:", err.message);
+        rl.close();
+        return;
+      }
+
+      console.log(`📌 Aktivitas terbaru dari ${username}:`);
+      printEvents(events, filter || null);
+
+      fetchRateLimit((err, rate) => {
+        if (!err) {
+          console.log(`\n📉 Rate Limit: ${rate.remaining} dari ${rate.limit} permintaan tersedia`);
+        }
+        rl.close();
+      });
+    });
   });
 });
