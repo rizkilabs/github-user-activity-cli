@@ -10,7 +10,7 @@
   "license": "MIT",
   "description": "Simple CLI to fetch GitHub user activity",
   "bin": {
-    "github-activity": "./index.js"
+    "github-activity": "./bin/github.js"
   },
   "type": "commonjs"
 }
